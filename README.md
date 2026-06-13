@@ -1,140 +1,237 @@
 # TaskFlow — Personal Task Manager
 
-> **Exercise 1** from the Studio Graphene take-home brief. A full-stack task manager with priorities, due-date countdowns, dark/light mode, drag-and-drop, and keyboard shortcuts.
+> **Exercise 1** from the Studio Graphene take-home brief.
+>
+> TaskFlow is a full-stack personal task manager built with Node.js + Express on the backend and React 18 + Vite on the frontend. It lets you create, edit, complete, and delete tasks with priorities, due-date countdowns, drag-and-drop reordering, search/filter, dark/light mode, and keyboard shortcuts — all persisted to a JSON file on the server so tasks survive restarts.
 
 ---
 
 ## Live Demo
 
-| Layer    | URL |
-|----------|-----|
-| Frontend | *(deploy to Vercel — see below)* |
-| Backend  | *(deploy to Render — see below)* |
+| Layer | URL |
+|-------|-----|
+| **Frontend** | **https://graphene-studio.vercel.app** |
+| **Backend** | **https://taskflow-api-rxoc.onrender.com** |
+
+> ⚠️ The backend runs on Render's **free tier** — the first request after a period of inactivity may take up to **50 seconds** to wake the server. Subsequent requests are instant.
 
 ---
 
 ## Tech Stack
 
-| Layer     | Choice | Why |
-|-----------|--------|-----|
-| Backend   | Node.js + Express | Lightweight, easy to structure into MVC layers |
-| Frontend  | React 18 + Vite | Fast HMR, minimal config, modern JSX |
-| Storage   | JSON file (`data/tasks.json`) | Zero-dependency persistence across restarts |
-| Styling   | Vanilla CSS with CSS variables | Full control, dark/light theming with one attribute |
-| DnD       | @dnd-kit/core + sortable | Accessible, pointer-sensor drag-and-drop |
-| Testing   | Jest + Supertest | Clean unit tests with model mocking |
+| Layer | Choice | Why |
+|-------|--------|-----|
+| **Backend runtime** | Node.js 18 | LTS, widely supported, zero install friction |
+| **Backend framework** | Express 4 | Minimal, un-opinionated; easy to structure into MVC layers without boilerplate |
+| **Persistence** | JSON file (`data/tasks.json`) | Zero external dependencies — no database to provision; survives server restarts; readable in any text editor |
+| **Unique IDs** | `uuid` (v4) | Collision-free task IDs without a database sequence |
+| **Environment config** | `dotenv` | Keeps secrets and paths out of source code |
+| **Frontend framework** | React 18 | Component model maps cleanly to a card-based UI; hooks make state management concise |
+| **Frontend build tool** | Vite 5 | Sub-second HMR, native ESM, minimal config |
+| **Drag-and-drop** | `@dnd-kit/core` + `@dnd-kit/sortable` | Accessible (keyboard + pointer), tree-shakeable, no jQuery dependency |
+| **HTTP client** | Axios | Automatic JSON parsing, clean interceptor support |
+| **Styling** | Vanilla CSS with CSS custom properties | Full control over the design system; dark/light theming with a single `data-theme` attribute swap; no build-time CSS-in-JS overhead |
+| **Testing** | Jest + Supertest | Fast unit tests; Supertest spins up the Express app in-process (no real port needed) |
+| **Dev server** | Nodemon | Auto-restarts on file changes during development |
 
 ---
 
 ## How to Run Locally
 
-> **Assumption:** Node.js ≥ 18 is installed.
+> **Assumption:** Node.js ≥ 18 is installed. No other global tools are required.
 
 ```bash
-# 1. Clone the repo
-git clone <your-repo-url>
-cd graphene-studio
+# 1. Clone the repository
+git clone https://github.com/Asheesh01/Graphene-Studio.git
+cd Graphene-Studio
 
-# 2. Install & start the backend (runs on :5000)
+# 2. Start the backend (runs on http://localhost:5000)
 cd server
 npm install
 npm run dev
 
-# 3. In a second terminal — install & start the frontend (runs on :3000)
-cd client
+# 3. Open a second terminal — start the frontend (runs on http://localhost:3000)
+cd ../client
 npm install
 npm run dev
 
-# 4. Open http://localhost:3000
+# 4. Open your browser at http://localhost:3000
 ```
 
-The Vite dev server proxies all `/api/*` requests to `http://localhost:5000` automatically — no CORS setup needed during development.
+The Vite dev server automatically **proxies** all `/api/*` requests to `http://localhost:5000`, so there is no CORS configuration needed during development.
 
-### Environment Variables (optional)
+### Optional Environment Variables
 
-Copy `server/.env.example` to `server/.env`:
+Copy `server/.env.example` to `server/.env` to override defaults:
 
+```bash
+cp server/.env.example server/.env
 ```
-PORT=5000
-DATA_FILE=./data/tasks.json   # path to persist tasks
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PORT` | `5000` | Port the Express server listens on |
+| `DATA_FILE` | `./data/tasks.json` | Path (relative to `server/`) where tasks are persisted |
+| `CLIENT_ORIGIN` | `*` | CORS allowed origin — set to your frontend URL in production |
+
+### Running Tests
+
+```bash
+cd server
+npm test
 ```
+
+Runs 13 Jest + Supertest tests covering health, CRUD, toggle, reorder, and validation — all passing.
 
 ---
 
 ## API Documentation
 
-Base URL: `http://localhost:5000`
+**Base URL (local):** `http://localhost:5000`  
+**Base URL (production):** `https://taskflow-api-rxoc.onrender.com`
 
-| Method   | Path                      | Body / Params                                              | Response           |
-|----------|---------------------------|------------------------------------------------------------|--------------------|
-| `GET`    | `/api/health`             | —                                                          | `{ status, timestamp }` |
-| `GET`    | `/api/tasks`              | —                                                          | `Task[]` sorted by order |
-| `POST`   | `/api/tasks`              | `{ title*, description?, dueDate?, priority? }`            | `Task` (201)       |
-| `PUT`    | `/api/tasks/:id`          | `{ title*, description?, dueDate?, priority? }`            | `Task`             |
-| `PATCH`  | `/api/tasks/:id/toggle`   | —                                                          | `Task`             |
-| `PATCH`  | `/api/tasks/reorder`      | `{ orderedIds: string[] }`                                 | `{ ok: true }`     |
-| `DELETE` | `/api/tasks/:id`          | —                                                          | `204 No Content`   |
+### Endpoints
 
-**Task shape:**
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/health` | Health check |
+| `GET` | `/api/tasks` | List all tasks |
+| `POST` | `/api/tasks` | Create a task |
+| `PUT` | `/api/tasks/:id` | Update a task |
+| `PATCH` | `/api/tasks/:id/toggle` | Toggle completed status |
+| `PATCH` | `/api/tasks/reorder` | Reorder tasks |
+| `DELETE` | `/api/tasks/:id` | Delete a task |
+
+---
+
+### `GET /api/health`
+**Response `200`**
 ```json
-{
-  "id": "uuid-v4",
-  "title": "Buy groceries",
-  "description": "Milk, eggs, bread",
-  "dueDate": "2026-06-15",
-  "priority": "high",
-  "completed": false,
-  "order": 0,
-  "createdAt": "2026-06-11T18:00:00.000Z",
-  "updatedAt": "2026-06-11T18:00:00.000Z"
-}
+{ "status": "ok", "timestamp": "2026-06-13T18:00:00.000Z" }
 ```
 
-Validation errors return `400 { errors: string[] }`.  
-Not-found returns `404 { error: string }`.
+---
+
+### `GET /api/tasks`
+Returns all tasks sorted by `order` ascending.
+
+**Response `200`**
+```json
+[
+  {
+    "id": "uuid-v4",
+    "title": "Buy groceries",
+    "description": "Milk, eggs, bread",
+    "dueDate": "2026-06-15",
+    "priority": "high",
+    "completed": false,
+    "order": 0,
+    "createdAt": "2026-06-11T18:00:00.000Z",
+    "updatedAt": "2026-06-11T18:00:00.000Z"
+  }
+]
+```
+
+---
+
+### `POST /api/tasks`
+**Request body**
+```json
+{
+  "title": "Buy groceries",       // required — non-empty string
+  "description": "Milk, eggs",    // optional string
+  "dueDate": "2026-06-15",        // optional — YYYY-MM-DD, must not be in the past
+  "priority": "high"              // optional — "low" | "medium" | "high" (default: "medium")
+}
+```
+**Response `201`** — the created task object  
+**Response `400`** — `{ "errors": ["Title is required.", ...] }`
+
+---
+
+### `PUT /api/tasks/:id`
+**Request body** — same shape as `POST /api/tasks` (all fields optional except `title`)  
+**Response `200`** — the updated task object  
+**Response `400`** — `{ "errors": [...] }`  
+**Response `404`** — `{ "error": "Task not found." }`
+
+---
+
+### `PATCH /api/tasks/:id/toggle`
+No request body required.  
+**Response `200`** — the task with `completed` flipped  
+**Response `404`** — `{ "error": "Task not found." }`
+
+---
+
+### `PATCH /api/tasks/reorder`
+**Request body**
+```json
+{ "orderedIds": ["uuid-1", "uuid-2", "uuid-3"] }
+```
+**Response `200`** — `{ "ok": true }`  
+**Response `400`** — `{ "errors": ["orderedIds must be a non-empty array."] }`
+
+---
+
+### `DELETE /api/tasks/:id`
+**Response `204`** — No content  
+**Response `404`** — `{ "error": "Task not found." }`
 
 ---
 
 ## Project Structure
 
 ```
-graphene-studio/
-├── server/
+Graphene-Studio/
+│
+├── server/                          ← Express API
 │   ├── src/
-│   │   ├── models/
-│   │   │   └── taskModel.js        ← data layer (JSON file I/O)
-│   │   ├── controllers/
-│   │   │   └── taskController.js   ← business logic + validation
+│   │   ├── index.js                 ← App bootstrap, middleware, error handlers
 │   │   ├── routes/
-│   │   │   └── tasks.js            ← Express.Router definitions only
-│   │   └── index.js                ← app bootstrap + middleware
+│   │   │   └── tasks.js             ← Express.Router — route definitions only
+│   │   ├── controllers/
+│   │   │   └── taskController.js    ← Business logic, input validation
+│   │   └── models/
+│   │       └── taskModel.js         ← Data layer — JSON file I/O (findAll, insert, update, remove, reorder)
 │   ├── tests/
-│   │   └── tasks.test.js           ← 13 Jest + Supertest tests
+│   │   └── tasks.test.js            ← 13 Jest + Supertest integration tests
 │   ├── data/
-│   │   └── tasks.json              ← auto-created on first run
+│   │   └── tasks.json               ← Auto-created on first run (gitignored)
+│   ├── .env.example                 ← Environment variable template
 │   └── package.json
 │
-└── client/
-    ├── src/
-    │   ├── api/
-    │   │   └── tasks.js            ← Axios API helpers
-    │   ├── components/
-    │   │   ├── Header.jsx          ← stats, theme toggle, kbd hints
-    │   │   ├── FilterBar.jsx       ← search, status/priority filters
-    │   │   ├── TaskForm.jsx        ← create/edit modal
-    │   │   ├── TaskList.jsx        ← DnD sortable list
-    │   │   ├── TaskCard.jsx        ← individual task card
-    │   │   ├── EmptyState.jsx      ← empty state UI
-    │   │   └── ConfirmModal.jsx    ← delete confirmation
-    │   ├── hooks/
-    │   │   └── useTasks.js         ← all task state + API calls
-    │   ├── utils/
-    │   │   └── dateUtils.js        ← "Due in 2 days" formatting
-    │   ├── App.jsx                 ← root component + keyboard shortcuts
-    │   ├── main.jsx
-    │   └── index.css               ← CSS variables + full design system
-    ├── index.html
-    └── package.json
+├── client/                          ← React + Vite frontend
+│   ├── src/
+│   │   ├── main.jsx                 ← React DOM entry point
+│   │   ├── App.jsx                  ← Root component — layout, keyboard shortcuts, global state
+│   │   ├── index.css                ← Design system: CSS variables, dark/light theme, all component styles
+│   │   ├── api/
+│   │   │   └── tasks.js             ← Axios helper functions — one per API endpoint
+│   │   ├── components/
+│   │   │   ├── Header.jsx           ← Branding, active/done counters, theme toggle, keyboard hints
+│   │   │   ├── FilterBar.jsx        ← Search input, status tabs (All/Active/Completed), priority dropdown
+│   │   │   ├── TaskForm.jsx         ← Create / edit modal with date picker and priority selector
+│   │   │   ├── TaskList.jsx         ← @dnd-kit sortable list wrapper
+│   │   │   ├── TaskCard.jsx         ← Individual task card — checkbox, badges, due-date chip, edit/delete
+│   │   │   ├── EmptyState.jsx       ← Illustrated empty state (different copy for no tasks vs no results)
+│   │   │   ├── ConfirmModal.jsx     ← Delete confirmation dialog
+│   │   │   └── ToastContainer.jsx   ← Toast notification stack (success / info)
+│   │   ├── hooks/
+│   │   │   ├── useTasks.js          ← All task state + CRUD + optimistic updates
+│   │   │   └── useToast.js          ← Toast queue management
+│   │   └── utils/
+│   │       └── dateUtils.js         ← Human-readable due-date labels ("Due in 2 days", "Overdue by 3 days")
+│   ├── index.html                   ← HTML shell with Google Fonts and meta tags
+│   ├── vercel.json                  ← Vercel build config + SPA rewrite rule
+│   ├── vite.config.js               ← Vite config with dev proxy to :5000
+│   └── package.json
+│
+├── data/
+│   └── .gitkeep                     ← Keeps the data/ directory tracked in git
+├── render.yaml                      ← Render infrastructure-as-code config
+├── .gitignore
+└── README.md
 ```
 
 ---
@@ -142,66 +239,39 @@ graphene-studio/
 ## Features Implemented
 
 ### Must Have ✅
-- Add task with title (required), description, due date
-- View tasks sorted by creation date (newest first)
+- Add task with title (required), description, and due date
+- View tasks sorted by creation order (newest first by default)
 - Toggle complete / incomplete
-- Edit task title, description, due date, priority
+- Edit task title, description, due date, and priority
 - Delete with confirmation modal
-- Filter by All / Active / Completed
 
 ### Should Have ✅
-- Active vs completed count in header
-- Overdue tasks highlighted with red left border + "Overdue by N days"
-- Empty state UI (different for no tasks vs no filter matches)
+- Active vs completed count displayed in the header
+- Overdue tasks highlighted with a red left border and "Overdue by N days" chip
+- Empty state UI — different messaging for "no tasks" vs "no filter results"
 
 ### Bonus ✅
-- **Search** by title and description
-- **Persist to JSON file** — tasks survive server restarts
-- **Drag-and-drop** reorder via @dnd-kit
-- **Priority badges** — Low (green) / Medium (orange) / High (red) with colored left border
-- **Due date countdown** — "Due in 2 days", "Due today", "Overdue by 3 days"
-- **Dark / Light mode toggle** — one CSS-variable switch, persisted to localStorage
-- **Keyboard shortcuts** — `N` to open new task form, `Esc` to close any modal
+- **Full-text search** across title and description
+- **JSON file persistence** — tasks survive server restarts with zero database setup
+- **Drag-and-drop reorder** via `@dnd-kit` with full keyboard support
+- **Priority badges** — Low (green) / Medium (orange) / High (red) with matching left border colour
+- **Due-date countdown** — "Due in 2 days", "Due today", "Overdue by 3 days"
+- **Dark / Light mode** — one CSS-variable swap, persisted to `localStorage`
+- **Keyboard shortcuts** — `N` opens the new-task form; `Esc` closes any modal
 - **Optimistic UI** — toggle and delete update instantly without waiting for the server
-
----
-
-## Running Tests
-
-```bash
-cd server
-npm test
-```
-
-13 tests covering health, CRUD, toggle, reorder, and validation — all passing.
+- **Toast notifications** — completion and revert actions surface a brief confirmation
 
 ---
 
 ## Next Steps
 
-With more time I would:
+With more time I would prioritise:
 
-1. **Authentication** — even a simple PIN/passphrase to make it multi-user
-2. **Subtasks** — nested checklist items inside a task
-3. **Due date notifications** — browser Notification API for overdue reminders
-4. **Recurring tasks** — daily/weekly repeat patterns
-5. **SQLite migration** — swap the JSON store for better-sqlite3 for concurrent writes
-6. **Accessibility audit** — full keyboard navigation through the task list, ARIA live regions for updates
-7. **E2E tests** — Playwright smoke tests for the happy path (create → complete → delete)
-
----
-
-## Deployment
-
-### Frontend (Vercel)
-```bash
-cd client && npm run build
-# Push to GitHub, connect repo to vercel.com, set root to /client
-```
-
-### Backend (Render)
-1. Connect GitHub repo to render.com → New Web Service
-2. Root directory: `server`
-3. Build command: `npm install`
-4. Start command: `npm start`
-5. Add env var: `CLIENT_ORIGIN=https://your-vercel-url.vercel.app`
+1. **Authentication** — a simple JWT-based login so tasks are scoped per user rather than shared globally
+2. **Subtasks** — nested checklist items inside a parent task, stored as a `subtasks[]` array on the task object
+3. **Due-date browser notifications** — use the Web Notification API to alert the user when a task becomes overdue, even while the tab is in the background
+4. **Recurring tasks** — a `recurrence` field (`daily` / `weekly` / `monthly`) that auto-creates the next instance when the current one is completed
+5. **SQLite migration** — swap the JSON store for `better-sqlite3` to handle concurrent writes safely and enable indexed queries (filtering by priority, date range, etc.)
+6. **Accessibility audit** — full arrow-key navigation through the task list, ARIA live regions for toast announcements, and a focus-trap inside modals
+7. **E2E test suite** — Playwright smoke tests for the core happy path: create → edit → complete → delete
+8. **Labels / tags** — free-form colour-coded labels for cross-cutting categorisation (e.g. "Work", "Personal", "Urgent")
