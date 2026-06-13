@@ -1,0 +1,2 @@
+# This file keeps the data/ directory tracked in git.
+# tasks.json is gitignored so the server auto-creates it on first run.

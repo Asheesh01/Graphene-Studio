@@ -1,0 +1,28 @@
+import { useState, useCallback } from 'react';
+
+/**
+ * useToast — lightweight toast manager.
+ * Returns { toasts, showToast, dismissToast }
+ *
+ * Each toast: { id, message, type }
+ * type: 'success' | 'error' | 'info'
+ */
+export default function useToast() {
+  const [toasts, setToasts] = useState([]);
+
+  const showToast = useCallback(({ message, type = 'success', duration = 3000 }) => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, message, type }]);
+
+    // Auto-dismiss after `duration` ms
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, duration);
+  }, []);
+
+  const dismissToast = useCallback((id) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  }, []);
+
+  return { toasts, showToast, dismissToast };
+}

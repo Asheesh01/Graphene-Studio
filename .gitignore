@@ -1,0 +1,26 @@
+# ── Node ──────────────────────────────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ── Environment ───────────────────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+
+# ── Build outputs ─────────────────────────────────────────────────────────────
+client/dist/
+client/.vite/
+
+# ── Data (persist structure, ignore actual data file in git) ──────────────────
+# Keep the data/ directory tracked but ignore the tasks file so the server
+# auto-creates it fresh on Render (ephemeral disk).
+# If you want to seed initial data, remove the next line.
+data/tasks.json
+
+# ── OS / Editor ───────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: taskflow-api
+    runtime: node
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATA_FILE
+        value: ./data/tasks.json
+      - key: CLIENT_ORIGIN
+        sync: false   # Set this in the Render dashboard to your Vercel URL
